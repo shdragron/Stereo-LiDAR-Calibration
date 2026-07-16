@@ -1,0 +1,72 @@
+# ============================================================================
+#  charuco_lidar_calib  configuration
+#  ZED2i (rectified left) <-> RoboSense RS-16, 8x7 ChArUco board
+#  All values verified live on this rig (2026-07-04).
+# ============================================================================
+
+board:
+  squares_x: 8            # number of squares horizontally (가로)
+  squares_y: 7            # number of squares vertically   (세로)
+  square_length: 0.12     # [m] side of one square
+  marker_length: 0.09     # [m] ArUco marker side inside a white square
+                          #     (only ~affects marker detection; ChArUco pose
+                          #      is determined by square_length, not this)
+  dictionary: DICT_5X5_50 # verified: 28 markers, ids 0..27 detect 100%
+  legacy: true            # board generated with pre-4.6 OpenCV layout
+                          # (cv2 4.5.4 CharucoBoard_create is legacy by default)
+  min_charuco_corners: 8  # skip a frame if fewer interior corners are found
+
+camera:
+  # rectified left image  ->  distortion is zero
+  # PUBLIC interface (fsg_sensors relay): /sensors/camera/{left,right}/{compressed,info}
+  # RAW images live on the hidden wrapper topics below (unlisted but subscribable)
+  image_topic: /_zed_hidden/zed/rgb/color/rect/image
+  camera_info_topic: /sensors/camera/left/info
+  optical_frame: zed_left_camera_frame_optical
+  image_encoding: bgra8   # ZED publishes BGRA8; converted to BGR before detection
+  width: 1280
+  height: 720
+  # Intrinsics fallback if no camera_info yaml / topic is available.
+  # Grabbed live from the ZED gen1 on 2026-07-16 (camera swapped from ZED2i —
+  # the old fx=524.58 values are DEAD). Refresh with `grab_camera_info` after
+  # any camera/firmware change; prefer passing --camera-info to calibrate.
+  # (fx, 0, cx, 0, fy, cy, 0, 0, 1)
+  K: [676.7546, 0.0, 653.2770,
+      0.0, 676.7546, 407.5903,
+      0.0, 0.0, 1.0]
+  D: [0.0, 0.0, 0.0, 0.0, 0.0]
+  # Stereo baseline [m], grabbed from the right camera_info (P[0,3] = -fx*B).
+  baseline: 0.12
+  left_image_topic: /_zed_hidden/zed/left/color/rect/image
+  right_image_topic: /_zed_hidden/zed/right/color/rect/image
+
+lidar:
+  topic: /sensors/lidar/points
+  frame: rslidar          # RoboSense frame: X forward, Y left, Z up
+  fields: [x, y, z, intensity]   # RS-16 here publishes XYZI only (no ring)
+
+# Semi-automatic LiDAR board extraction
+lidar_extract:
+  # Front-view (project onto Y-Z, looking along +X) is used for the ROI click.
+  # Points are colored by depth (X) so the board (near) stands out from the
+  # background (far) at similar bearing.
+  front_view_size: 900          # px of the interactive/debug front view
+  depth_min: 0.4                # [m] ignore points closer than this
+  depth_max: 4.0                # [m] ignore points farther than this
+  ransac_dist_thresh: 0.02      # [m] plane inlier threshold
+  ransac_iters: 2000
+  min_plane_inliers: 200
+  # Refine 4 corners by fitting a rectangle of the KNOWN board size to the
+  # in-plane inliers (robust to RS-16 vertical sparsity). Falls back to
+  # minAreaRect if the fit fails.
+  fit_known_size: true
+
+solve:
+  min_frames: 3           # need >= 3 non-coplanar board poses for a good solve
+  # extrinsic output direction: 'lidar_to_cam' (project LiDAR into image) is
+  # what calc_RT returns natively; the inverse is also written.
+  primary_direction: lidar_to_cam
+
+output:
+  debug_dir: calib_debug           # relative to workspace; all debug PNGs go here
+  extrinsic_yaml: calib_debug/extrinsic_zed_rslidar.yaml

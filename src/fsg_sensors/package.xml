@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>fsg_sensors</name>
+  <version>0.1.0</version>
+  <description>
+    FSG driverless sensor bringup: RS-16 LiDAR + ZED camera under the /sensors
+    namespace, extrinsic TF publishing, and a pre-flight health check.
+    Config/launch only — vendor drivers (rslidar_sdk, zed-ros2-wrapper) are
+    consumed unmodified.
+  </description>
+  <maintainer email="shchon724@gmail.com">race</maintainer>
+  <license>MIT</license>
+
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>sensor_msgs</exec_depend>
+  <exec_depend>message_filters</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+  <exec_depend>rslidar_sdk</exec_depend>
+  <exec_depend>zed_wrapper</exec_depend>
+  <exec_depend>charuco_lidar_calib</exec_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
